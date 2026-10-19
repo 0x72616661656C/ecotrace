@@ -1,0 +1,31 @@
+# Ambientes e caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+node_modules/
+dist/
+
+# Dados, pesos e artefatos gerados
+models/checkpoints/
+models/data/
+web/backend/data/cog_dataset.tif
+web/backend/data/extract-gee/
+web/backend/data/tile_cache/
+web/backend/data/tile_index.json
+web/backend/models/checkpoints/
+web/frontend/extract-gee/
+web/frontend/tile_index.json
+web/frontend/.cache/
+logs/
+outputs/
+plots/
+
+# Material histórico preservado localmente, mas fora do repositório
+kaggle-2026-07-23-151930/
+ybira/
+backups/
+
+# Documentos de trabalho e relatórios locais
+*.pdf
