@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Layers, LocateFixed } from 'lucide-react';
-import { overviewUrl } from '@/lib/dataset';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export function MapContainer({ selectedTileIds, onTileToggle, maskOverlayData, maskOpacity, uncertaintyOpacity, showUncertainty, imageCoverage, isProcessing }) {
   const mapElementRef = useRef(null);
@@ -51,7 +52,7 @@ export function MapContainer({ selectedTileIds, onTileToggle, maskOverlayData, m
     const bounds = L.latLngBounds([[overall.south, overall.west], [overall.north, overall.east]]);
 
     overviewRef.current?.remove();
-    overviewRef.current = L.imageOverlay(overviewUrl(), bounds, {
+    overviewRef.current = L.imageOverlay(`${API_BASE_URL}/overview.png`, bounds, {
       opacity: 1,
       interactive: false,
       pane: 'overviewPane',
@@ -86,7 +87,7 @@ export function MapContainer({ selectedTileIds, onTileToggle, maskOverlayData, m
           const longitudeBleed = (tile.east - tile.west) * 0.003;
           const latitudeBleed = (tile.north - tile.south) * 0.003;
           detailedOverlaysRef.current[tile.file] = L.imageOverlay(
-            tile.preview_url,
+            `${API_BASE_URL}/tile_image/${encodeURIComponent(tile.file)}`,
             [[tile.south - latitudeBleed, tile.west - longitudeBleed], [tile.north + latitudeBleed, tile.east + longitudeBleed]],
             { opacity: 1, interactive: false, pane: 'detailPane' },
           ).addTo(map);

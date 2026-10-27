@@ -18,8 +18,6 @@ web/backend/models/checkpoints/
 web/frontend/extract-gee/
 web/frontend/tile_index.json
 web/frontend/.cache/
-web/frontend/public/onnx/
-web/frontend/public/models/*.onnx
 logs/
 outputs/
 plots/
@@ -31,4 +29,3 @@ backups/
 
 # Documentos de trabalho e relatórios locais
 *.pdf
-.vercel
