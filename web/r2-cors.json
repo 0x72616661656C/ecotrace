@@ -1,0 +1,11 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": ["https://ecotrace.vercel.app"],
+      "AllowedMethods": ["GET", "HEAD"],
+      "AllowedHeaders": ["Range", "Content-Type"],
+      "ExposeHeaders": ["Accept-Ranges", "Content-Range", "Content-Length", "ETag"],
+      "MaxAgeSeconds": 86400
+    }
+  ]
+}

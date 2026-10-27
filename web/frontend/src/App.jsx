@@ -3,15 +3,15 @@ import { Toaster, toast } from 'sonner';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { MapContainer } from '@/components/MapContainer';
 import { AppSidebar } from '@/components/AppSidebar';
-
-// Em produção, a interface pode apontar para uma API hospedada separadamente.
-// Sem a variável, o proxy local do Vite continua usando /api.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+import { loadCoverage } from '@/lib/dataset';
+import { detectTiles } from '@/lib/inference';
 
 export default function App() {
   const [selectedTiles, setSelectedTiles] = useState([]);
-  const [selectedModel, setSelectedModel] = useState('unet');
-  const [threshold, setThreshold] = useState(0.7);
+  // A Attention U-Net é muito menor que a U-Net clássica e é a opção segura
+  // para inferência local em notebooks e celulares.
+  const [selectedModel, setSelectedModel] = useState('attn_unet');
+  const [threshold, setThreshold] = useState(0.9);
   const [maskOpacity, setMaskOpacity] = useState(0.75);
   const [uncertaintyOpacity, setUncertaintyOpacity] = useState(0.8);
   const [useMcDropout, setUseMcDropout] = useState(false);
@@ -23,11 +23,7 @@ export default function App() {
   const [imageCoverage, setImageCoverage] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/coverage`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error((await response.json()).detail || 'Serviço indisponível');
-        return response.json();
-      })
+    loadCoverage()
       .then(setImageCoverage)
       .catch((error) => toast.error('Dados Sentinel-2 indisponíveis', { description: error.message }));
   }, []);
@@ -35,8 +31,8 @@ export default function App() {
   const handleTileToggle = (tile) => {
     setSelectedTiles((current) => {
       const isSelected = current.some((item) => item.file === tile.file);
-      if (!isSelected && current.length >= 20) {
-        toast.error('Limite de 20 tiles por inferência', { description: 'Execute a análise atual ou remova um tile da seleção.' });
+      if (!isSelected && current.length >= 1) {
+        toast.error('Um tile por análise', { description: 'O limite evita picos de memória no dispositivo.' });
         return current;
       }
       const next = isSelected ? current.filter((item) => item.file !== tile.file) : [...current, tile];
@@ -67,25 +63,21 @@ export default function App() {
   const handleRunDetection = async () => {
     if (!selectedTiles.length || isProcessing) return;
     setIsProcessing(true);
-    toast.loading('Processando GeoTIFF Sentinel-2 com B8/NIR real…', { id: 'detection' });
+    toast.loading('Baixando e processando GeoTIFFs neste navegador…', { id: 'detection' });
 
     try {
-      const response = await fetch(`${API_BASE_URL}/detect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tile_ids: selectedTiles.map((tile) => tile.file),
-          model_type: selectedModel,
-          threshold,
-          use_mc_dropout: useMcDropout,
-          mc_samples: mcSamples,
-        }),
+      if (useMcDropout) {
+        throw new Error('Monte Carlo Dropout não está disponível no modelo ONNX de produção. Desative a opção para continuar.');
+      }
+      const data = await detectTiles({
+        tiles: selectedTiles,
+        modelType: selectedModel,
+        threshold,
+        onProgress: (index, total, filename) => toast.loading(`Processando ${index + 1}/${total}: ${filename}`, { id: 'detection' }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || `Erro no servidor (${response.status})`);
 
       setResults(data);
-      setShowUncertainty(data.overlays.some((overlay) => Boolean(overlay.uncertainty_png_base64)));
+      setShowUncertainty(false);
       setMaskOverlayData(data.overlays);
       toast.success('Análise concluída', {
         id: 'detection',
