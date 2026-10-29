@@ -16,12 +16,16 @@ web/backend/data/tile_cache/
 web/backend/data/tile_index.json
 web/backend/models/checkpoints/
 web/frontend/extract-gee/
+web/backend/extract-gee/
+web/backend/.cache/
 web/frontend/tile_index.json
 web/frontend/.cache/
 logs/
 outputs/
 plots/
-
+.r2-upload-state
+text.txt
+web/scripts
 # Material histórico preservado localmente, mas fora do repositório
 kaggle-2026-07-23-151930/
 ybira/

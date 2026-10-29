@@ -18,11 +18,12 @@ from pyproj import Transformer
 
 logger = logging.getLogger(__name__)
 
-WEB_DIR = Path(__file__).resolve().parents[1]
-FRONTEND_DIR = WEB_DIR / "frontend"
-EXTRACT_GEE_DIR = FRONTEND_DIR / "extract-gee"
-INDEX_PATH = FRONTEND_DIR / "tile_index.json"
-CACHE_DIR = FRONTEND_DIR / ".cache" / "tile_previews_v3"
+BACKEND_DIR = Path(__file__).resolve().parent
+# Os dados pertencem ao servidor, não ao build estático do frontend. Os dois
+# caminhos podem ser sobrescritos no Windows sem alterar o código.
+EXTRACT_GEE_DIR = Path(os.getenv("ECOTRACE_DATA_DIR", BACKEND_DIR / "extract-gee"))
+INDEX_PATH = Path(os.getenv("ECOTRACE_TILE_INDEX", BACKEND_DIR / "tile_index.json"))
+CACHE_DIR = BACKEND_DIR / ".cache" / "tile_previews_v3"
 OVERVIEW_PATH = CACHE_DIR / "sentinel_overview.png"
 _overview_lock = Lock()
 

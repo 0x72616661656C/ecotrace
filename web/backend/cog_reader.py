@@ -23,10 +23,11 @@ from pyproj import Transformer
 
 logger = logging.getLogger(__name__)
 
-WEB_DIR = Path(__file__).resolve().parents[1]
-FRONTEND_DIR = WEB_DIR / "frontend"
-COG_PATH = FRONTEND_DIR / "cog_dataset.tif"
-INDEX_PATH = FRONTEND_DIR / "tile_index.json"
+BACKEND_DIR = Path(__file__).resolve().parent
+# O mosaico é opcional; sem ele o leitor usa os GeoTIFFs individuais do
+# diretório configurado no local_tile_reader.
+COG_PATH = Path(os.getenv("ECOTRACE_COG_PATH", BACKEND_DIR / "cog_dataset.tif"))
+INDEX_PATH = Path(os.getenv("ECOTRACE_TILE_INDEX", BACKEND_DIR / "tile_index.json"))
 
 transformer_to_latlon = Transformer.from_crs("EPSG:32620", "EPSG:4326", always_xy=True)
 transformer_to_utm = Transformer.from_crs("EPSG:4326", "EPSG:32620", always_xy=True)

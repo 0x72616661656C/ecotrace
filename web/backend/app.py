@@ -47,6 +47,21 @@ DEVICE = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is
 model_cache: dict[str, torch.nn.Module] = {}
 
 
+def env_flag(name: str, default: bool = False) -> bool:
+    """Lê uma flag booleana de ambiente sem aceitar valores ambíguos."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def allowed_origins() -> list[str]:
+    """Origens liberadas para uma interface hospedada fora deste servidor."""
+    configured = os.getenv("ECOTRACE_ALLOWED_ORIGINS", "")
+    origins = [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return origins or ["http://127.0.0.1:5173", "http://localhost:5173"]
+
+
 def get_model(model_type: str) -> torch.nn.Module:
     if model_type not in model_cache:
         logger.info("Carregando %s em %s", model_type, DEVICE)
@@ -73,7 +88,17 @@ async def lifespan(_: FastAPI):
         get_overview_png()
     except Exception as error:
         logger.warning("Prévia geral Sentinel-2 não foi criada: %s", error)
-    Thread(target=precache_all_tiles_parallel, name="ecotrace-tile-cache", daemon=True).start()
+    # Pré-renderizar os 2.025 arquivos abre vários GeoTIFFs em paralelo e pode
+    # esgotar a RAM de servidores modestos. Em produção o cache é preenchido
+    # sob demanda; habilite somente se houver memória de sobra.
+    if env_flag("ECOTRACE_PRECACHE"):
+        workers = max(1, int(os.getenv("ECOTRACE_PRECACHE_WORKERS", "1")))
+        Thread(
+            target=precache_all_tiles_parallel,
+            kwargs={"max_workers": workers},
+            name="ecotrace-tile-cache",
+            daemon=True,
+        ).start()
     yield
     model_cache.clear()
 
@@ -86,7 +111,7 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -176,8 +201,8 @@ async def get_coverage():
             status_code=503,
             detail=(
                 "Não foi possível carregar os GeoTIFFs do Extract-GEE. "
-                "Verifique web/frontend/extract-gee e, se necessário, remova "
-                "web/frontend/tile_index.json para recriá-lo. "
+                "Verifique ECOTRACE_DATA_DIR (padrão: web/backend/extract-gee) "
+                "e, se necessário, remova ECOTRACE_TILE_INDEX para recriá-lo. "
                 f"Detalhe: {error}"
             ),
         ) from error

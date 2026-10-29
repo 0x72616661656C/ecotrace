@@ -5,7 +5,7 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: { proxy: { '/api': 'http://127.0.0.1:8000' } },
+  server: { proxy: { '/api': 'https://ectrc.rafaew.tech/' } },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
